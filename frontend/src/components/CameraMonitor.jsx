@@ -1,64 +1,144 @@
 import { useEffect, useRef } from "react";
 import "../index.css";
 
-function CameraMonitor() {
+function CameraMonitor({ onCameraStatusChange }) {
 
-  const videoRef = useRef(null);
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
 
-  useEffect(() => {
+    useEffect(() => {
 
-    let stream;
+        let mounted = true;
 
-    const startCamera = async () => {
+        const updateStatus = (status) => {
 
-      try {
+            if (
+                mounted &&
+                typeof onCameraStatusChange === "function"
+            ) {
+                onCameraStatusChange(status);
+            }
 
-        stream =
-          await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
+        };
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        const startCamera = async () => {
 
-      } catch (err) {
-        console.log(err);
-        alert("Camera access denied.");
-      }
+            try {
 
-    };
+                updateStatus("checking");
 
-    startCamera();
+                const stream =
+                    await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
 
-    return () => {
+                if (!mounted) {
 
-      if (stream) {
+                    stream
+                        .getTracks()
+                        .forEach((track) => track.stop());
 
-        stream.getTracks().forEach(track => track.stop());
+                    return;
+                }
 
-      }
+                streamRef.current = stream;
 
-    };
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
 
-  }, []);
+                const videoTrack =
+                    stream.getVideoTracks()[0];
 
-  return (
+                if (!videoTrack) {
+                    updateStatus("disabled");
+                    return;
+                }
 
-    <div className="camera-container">
+                /*
+                 * Check whether the camera track is actually live.
+                 */
 
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="camera-video"
-      />
+                if (videoTrack.readyState === "live") {
 
-    </div>
+                    updateStatus("enabled");
 
-  );
+                } else {
+
+                    updateStatus("disabled");
+
+                }
+
+                /*
+                 * Detect if the camera is disabled
+                 * while the interview is running.
+                 */
+
+                videoTrack.onended = () => {
+
+                    console.log(
+                        "Camera track ended."
+                    );
+
+                    updateStatus("disabled");
+
+                };
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "Camera access error:",
+                    error
+                );
+
+                updateStatus("disabled");
+
+            }
+
+        };
+
+        startCamera();
+
+        return () => {
+
+            mounted = false;
+
+            if (streamRef.current) {
+
+                streamRef.current
+                    .getTracks()
+                    .forEach((track) => {
+
+                        track.stop();
+
+                    });
+
+                streamRef.current = null;
+            }
+
+        };
+
+    }, [onCameraStatusChange]);
+
+
+    return (
+
+        <div className="camera-container">
+
+            <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="camera-video"
+            />
+
+        </div>
+
+    );
 
 }
 
