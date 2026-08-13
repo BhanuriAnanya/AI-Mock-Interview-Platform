@@ -1,11 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "/api",
+    baseURL: "https://ai-mock-interview-platform-nvb5.onrender.com/api",
 });
 
 api.interceptors.request.use((config) => {
-
     const token = localStorage.getItem("token");
 
     if (token) {
