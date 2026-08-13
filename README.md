@@ -37,13 +37,13 @@ Score + Feedback
 ## 🚀 Clone & Run Locally
 1. Clone the Repository
 git clone https://github.com/BhanuriAnanya/AI-Mock-Interview-Platform.git
-cd AI-Mock-Interview-Platform
+-> cd AI-Mock-Interview-Platform
+
 2. Setup the Backend
 
 Open a terminal and navigate to the backend:
-
-cd backend
-npm install
+-> cd backend
+-> npm install
 
 Create a .env file inside the backend folder:
 
