@@ -10,18 +10,15 @@
       "entrypoint": "server:app"
     }
   },
+ 
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "https://ai-mock-interview-platform-nvb5.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
     }
   ]
 }
