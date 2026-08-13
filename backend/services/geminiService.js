@@ -11,111 +11,237 @@ const generateInterviewQuestions = async (resumeText) => {
         const prompt = `
 You are a professional Senior Software Engineering interviewer.
 
-You are conducting a realistic technical interview for the candidate whose resume is provided below.
+You are conducting a realistic technical mock interview for the candidate whose resume is provided below.
 
 RESUME:
 ${resumeText}
 
 YOUR TASK:
 
-Generate exactly 10 interview questions following this EXACT sequence.
+Generate EXACTLY 30 interview questions.
 
+The questions MUST follow this exact structure and order.
+
+==================================================
 SECTION 1 — SELF INTRODUCTION
+==================================================
+
 Question 1:
-Ask the candidate to introduce themselves and briefly explain their journey in Computer Science.
 
-SECTION 2 — RESUME-BASED INTERVIEW
-Questions 2 to 5:
+Ask the candidate:
 
-Ask questions strictly based on information actually present in the resume.
+"Tell me about yourself and your journey in Computer Science."
 
-Cover things such as:
+This must be the first question.
+
+==================================================
+SECTION 2 — RESUME DEEP-DIVE
+==================================================
+
+Questions 2 to 15:
+
+Generate 14 questions based STRICTLY on the information actually present in the resume.
+
+The goal is to cover the candidate's resume as comprehensively as possible.
+
+Analyze the ENTIRE resume before generating these questions.
+
+Try to cover relevant information such as:
+
 - Education
-- Internship or work experience
-- Projects
-- Technologies
+- Academic background
 - Programming languages
+- Technical skills
+- Frameworks
+- Libraries
 - Databases
 - Tools
+- Internships
+- Work experience
+- Projects
+- Project architecture
+- Candidate's responsibilities
 - Technical implementation
-- Challenges faced in projects
-- Candidate's contribution
+- Technologies used in projects
+- APIs
+- Databases used in projects
+- Challenges faced
+- Solutions implemented
+- Important technical decisions
+- Contributions
+- Achievements
+- Certifications
+- Relevant coursework
 
 IMPORTANT:
-Every question in this section must reference something that actually exists in the resume.
 
-Do NOT invent projects, companies, technologies, internships, or experiences.
+Every resume question MUST be based on something that actually exists in the resume.
 
+Do NOT invent:
+
+- Projects
+- Companies
+- Internships
+- Technologies
+- Programming languages
+- Certifications
+- Responsibilities
+- Achievements
+- Experience
+
+If something does not exist in the resume, DO NOT ask about it.
+
+Try to distribute the 14 questions across different parts of the resume instead of asking many questions about the same project or skill.
+
+The questions should progressively become deeper.
+
+For example:
+
+First ask what the candidate did.
+
+Then ask how they implemented it.
+
+Then ask why they selected a particular technology.
+
+Then ask about challenges, decisions, optimization, or improvements.
+
+==================================================
 SECTION 3 — MEDIUM-LEVEL DSA AND CODING
-Questions 6 to 8:
+==================================================
 
-First identify the primary programming language mentioned in the resume.
+Questions 16 to 23:
 
-Use ONLY a programming language that is actually mentioned in the resume.
+First identify the PRIMARY programming language mentioned in the resume.
 
-Ask medium-level DSA/coding interview questions appropriate for that language.
+Use ONLY a programming language that actually appears in the resume.
+
+Generate 8 medium-level DSA and coding questions using that programming language.
 
 Cover topics such as:
+
 - Arrays
 - Strings
 - Hashing
 - Searching
 - Sorting
-- Stack or Queue
-- Basic problem solving
+- Stack
+- Queue
+- Linked lists
+- Basic recursion
+- Time and space complexity
+- Problem solving
 
-At least ONE question must ask the candidate to explain or write a solution/code using the programming language identified from the resume.
+At least TWO questions must require the candidate to explain or write a solution/code using the programming language identified from the resume.
+
+Questions should be appropriate for a software engineering interview.
+
+Difficulty must be MEDIUM.
 
 Do NOT ask advanced competitive programming questions.
 
-Do NOT ask system-design questions in this section.
+Do NOT ask system-design questions.
 
+Do NOT use a programming language that is not present in the resume.
+
+==================================================
 SECTION 4 — SITUATIONAL / BEHAVIORAL
-Questions 9 to 10:
+==================================================
 
-Ask realistic software-engineering workplace situations.
+Questions 24 to 30:
 
-Examples of topics:
-- Handling disagreement with a teammate
-- Debugging a problem under time pressure
+Generate 7 realistic software-engineering situational and behavioral questions.
+
+Cover different situations such as:
+
+- Disagreement with a teammate
+- Debugging a difficult problem
+- Working under time pressure
 - Meeting a difficult deadline
 - Handling a failed implementation
-- Working with an unfamiliar technology
-- Handling feedback from a senior
+- Learning an unfamiliar technology
+- Receiving critical feedback
 - Prioritizing multiple tasks
+- Handling changing requirements
+- Working in a team
+- Taking ownership of a problem
 
-Make the situations relevant to a software engineering role.
+Do not repeat the same situation.
 
-IMPORTANT RULES:
+Questions should be relevant to a software engineering role.
 
-1. Generate EXACTLY 10 questions.
-2. Keep the questions in the exact order described above.
-3. Questions must be written in clear professional English.
-4. Do not use Chinese, Korean, Japanese, Arabic, or any other non-English characters.
-5. Use normal English letters, numbers, punctuation, and programming symbols only.
-6. Do not add random characters.
-7. Do not invent information that is not in the resume.
-8. Do not repeat questions.
-9. Do not provide answers.
-10. Do not provide explanations.
-11. Do not add section headings to the questions.
-12. Do not number the questions.
-13. Do not use bullet points.
-14. Return ONLY a valid JSON array containing exactly 10 question strings.
+==================================================
+IMPORTANT OUTPUT RULES
+==================================================
+
+1. Generate EXACTLY 30 questions.
+
+2. Question 1 MUST be the self-introduction question.
+
+3. Questions 2-15 MUST be resume-based.
+
+4. Questions 16-23 MUST be medium-level DSA/coding questions.
+
+5. Questions 24-30 MUST be situational/behavioral questions.
+
+6. Analyze the ENTIRE resume before creating resume questions.
+
+7. Cover the resume as comprehensively as possible.
+
+8. Do NOT invent information that is not in the resume.
+
+9. Do NOT repeat questions.
+
+10. Do NOT provide answers.
+
+11. Do NOT provide explanations.
+
+12. Do NOT add section headings.
+
+13. Do NOT add numbering.
+
+14. Do NOT use bullet points.
+
+15. Use clear professional English.
+
+16. Do NOT use Chinese, Korean, Japanese, Arabic, or other non-English characters.
+
+17. Return ONLY a valid JSON array.
+
+18. The JSON array MUST contain exactly 30 strings.
 
 EXPECTED FORMAT:
 
 [
   "Tell me about yourself and your journey in Computer Science.",
-  "Question based on the candidate's resume.",
-  "Question based on the candidate's resume.",
-  "Question based on the candidate's resume.",
-  "Question based on the candidate's resume.",
-  "Medium-level DSA question using the programming language from the resume.",
-  "Medium-level coding question using the programming language from the resume.",
-  "Medium-level problem-solving question using the programming language from the resume.",
-  "Situational software engineering question.",
-  "Situational software engineering question."
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Resume-based question...",
+  "Medium-level DSA question...",
+  "Medium-level coding question...",
+  "Medium-level DSA question...",
+  "Medium-level coding question...",
+  "Medium-level DSA question...",
+  "Medium-level DSA question...",
+  "Medium-level coding question...",
+  "Medium-level problem-solving question...",
+  "Situational software engineering question...",
+  "Situational software engineering question...",
+  "Situational software engineering question...",
+  "Situational software engineering question...",
+  "Situational software engineering question...",
+  "Situational software engineering question...",
+  "Situational software engineering question..."
 ]
 
 Generate the questions now.
@@ -124,9 +250,7 @@ Generate the questions now.
         console.log("\nSending resume to OpenRouter...");
 
         const response = await axios.post(
-
             "https://openrouter.ai/api/v1/chat/completions",
-
             {
                 model: "google/gemma-3-27b-it",
 
@@ -144,7 +268,7 @@ Generate the questions now.
 
                 temperature: 0.2,
 
-                max_tokens: 2000
+                max_tokens: 4000
             },
 
             {
@@ -156,7 +280,6 @@ Generate the questions now.
                         "application/json"
                 }
             }
-
         );
 
         if (
@@ -167,11 +290,9 @@ Generate the questions now.
         ) {
 
             console.log("Invalid AI response:");
-
             console.log(response.data);
 
             throw new Error("Invalid AI response");
-
         }
 
         let rawQuestions =
@@ -183,16 +304,13 @@ Generate the questions now.
 
         console.log(rawQuestions);
 
-
         // Remove markdown code fences if the model adds them
         rawQuestions = rawQuestions
             .replace(/```json/gi, "")
             .replace(/```/g, "")
             .trim();
 
-
         let questionArray;
-
 
         try {
 
@@ -207,7 +325,6 @@ Generate the questions now.
             const endIndex =
                 rawQuestions.lastIndexOf("]");
 
-
             if (
                 startIndex === -1 ||
                 endIndex === -1
@@ -216,16 +333,13 @@ Generate the questions now.
                 throw new Error(
                     "JSON array not found"
                 );
-
             }
-
 
             const jsonText =
                 rawQuestions.substring(
                     startIndex,
                     endIndex + 1
                 );
-
 
             questionArray =
                 JSON.parse(jsonText);
@@ -245,9 +359,7 @@ Generate the questions now.
             throw new Error(
                 "AI returned invalid question format"
             );
-
         }
-
 
         // Validate that the AI returned an array
         if (!Array.isArray(questionArray)) {
@@ -255,9 +367,7 @@ Generate the questions now.
             throw new Error(
                 "AI questions are not an array"
             );
-
         }
-
 
         // Remove invalid / empty questions
         questionArray =
@@ -274,11 +384,9 @@ Generate the questions now.
                         .trim()
                 );
 
-
         console.log("\n======================================");
         console.log("CLEAN QUESTIONS");
         console.log("======================================");
-
 
         questionArray.forEach(
             (question, index) => {
@@ -290,23 +398,20 @@ Generate the questions now.
             }
         );
 
-
         /*
-         * We require exactly 10 questions.
+         * We require exactly 30 questions.
          */
 
-        if (questionArray.length !== 10) {
+        if (questionArray.length !== 30) {
 
             console.log(
-                `AI returned ${questionArray.length} questions instead of 10.`
+                `AI returned ${questionArray.length} questions instead of 30.`
             );
 
             throw new Error(
-                "AI did not generate exactly 10 questions"
+                "AI did not generate exactly 30 questions"
             );
-
         }
-
 
         /*
          * Convert the array into newline-separated
@@ -317,13 +422,11 @@ Generate the questions now.
         const finalQuestions =
             questionArray.join("\n");
 
-
         console.log("\n======================================");
         console.log("FINAL QUESTIONS SENT TO INTERVIEW");
         console.log("======================================");
 
         console.log(finalQuestions);
-
 
         return finalQuestions;
 
@@ -342,7 +445,6 @@ Generate the questions now.
         console.log(
             "======================================"
         );
-
 
         if (error.response) {
 
@@ -363,16 +465,11 @@ Generate the questions now.
             console.log(
                 error.message
             );
-
         }
 
-
         throw error;
-
     }
-
 };
-
 
 module.exports = {
     generateInterviewQuestions
