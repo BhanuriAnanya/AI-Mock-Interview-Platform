@@ -1,14 +1,20 @@
 const axios = require("axios");
 
+const OPENROUTER_URL =
+    "https://openrouter.ai/api/v1/chat/completions";
+
+const MODEL =
+    "google/gemma-3-27b-it";
+
+const TOTAL_QUESTIONS = 30;
+
 const generateInterviewQuestions = async (resumeText) => {
 
     console.log("\n======================================");
     console.log("AI INTERVIEW QUESTION GENERATION");
     console.log("======================================");
 
-    try {
-
-        const prompt = `
+    const prompt = `
 You are a professional Senior Software Engineering interviewer.
 
 You are conducting a realistic technical mock interview for the candidate whose resume is provided below.
@@ -16,37 +22,27 @@ You are conducting a realistic technical mock interview for the candidate whose 
 RESUME:
 ${resumeText}
 
-YOUR TASK:
-
 Generate EXACTLY 30 interview questions.
 
-The questions MUST follow this exact structure and order.
+The interview MUST follow this exact structure:
 
-==================================================
 SECTION 1 — SELF INTRODUCTION
-==================================================
 
 Question 1:
-
-Ask the candidate:
+Ask:
 
 "Tell me about yourself and your journey in Computer Science."
 
-This must be the first question.
+This MUST be the first question.
 
-==================================================
 SECTION 2 — RESUME DEEP-DIVE
-==================================================
 
 Questions 2 to 15:
+Generate exactly 14 questions based ONLY on information actually present in the resume.
 
-Generate 14 questions based STRICTLY on the information actually present in the resume.
+Analyze the ENTIRE resume.
 
-The goal is to cover the candidate's resume as comprehensively as possible.
-
-Analyze the ENTIRE resume before generating these questions.
-
-Try to cover relevant information such as:
+Try to cover the candidate's:
 
 - Education
 - Academic background
@@ -60,64 +56,42 @@ Try to cover relevant information such as:
 - Work experience
 - Projects
 - Project architecture
-- Candidate's responsibilities
 - Technical implementation
-- Technologies used in projects
 - APIs
-- Databases used in projects
-- Challenges faced
-- Solutions implemented
-- Important technical decisions
+- Technologies used
+- Challenges
+- Solutions
+- Technical decisions
 - Contributions
 - Achievements
 - Certifications
 - Relevant coursework
 
-IMPORTANT:
+Every question MUST be supported by information actually present in the resume.
 
-Every resume question MUST be based on something that actually exists in the resume.
+DO NOT invent projects, companies, internships, technologies, programming languages, certifications, responsibilities, achievements, or experience.
 
-Do NOT invent:
+Distribute the 14 questions across different parts of the resume.
 
-- Projects
-- Companies
-- Internships
-- Technologies
-- Programming languages
-- Certifications
-- Responsibilities
-- Achievements
-- Experience
+Ask progressively deeper questions:
+- what the candidate did
+- how they implemented it
+- why they chose a technology
+- challenges
+- decisions
+- optimization
+- improvements
 
-If something does not exist in the resume, DO NOT ask about it.
-
-Try to distribute the 14 questions across different parts of the resume instead of asking many questions about the same project or skill.
-
-The questions should progressively become deeper.
-
-For example:
-
-First ask what the candidate did.
-
-Then ask how they implemented it.
-
-Then ask why they selected a particular technology.
-
-Then ask about challenges, decisions, optimization, or improvements.
-
-==================================================
-SECTION 3 — MEDIUM-LEVEL DSA AND CODING
-==================================================
+SECTION 3 — MEDIUM DSA AND CODING
 
 Questions 16 to 23:
+Generate exactly 8 medium-level DSA/coding questions.
 
 First identify the PRIMARY programming language mentioned in the resume.
 
-Use ONLY a programming language that actually appears in the resume.
+Use ONLY that programming language.
 
-Generate 8 medium-level DSA and coding questions using that programming language.
-
-Cover topics such as:
+Cover different topics such as:
 
 - Arrays
 - Strings
@@ -126,139 +100,119 @@ Cover topics such as:
 - Sorting
 - Stack
 - Queue
-- Linked lists
-- Basic recursion
-- Time and space complexity
+- Linked Lists
+- Recursion
+- Time complexity
+- Space complexity
 - Problem solving
 
-At least TWO questions must require the candidate to explain or write a solution/code using the programming language identified from the resume.
-
-Questions should be appropriate for a software engineering interview.
+At least TWO questions must require the candidate to explain or write code using the programming language from the resume.
 
 Difficulty must be MEDIUM.
 
 Do NOT ask advanced competitive programming questions.
 
-Do NOT ask system-design questions.
+Do NOT ask system design questions.
 
-Do NOT use a programming language that is not present in the resume.
-
-==================================================
-SECTION 4 — SITUATIONAL / BEHAVIORAL
-==================================================
+SECTION 4 — SITUATIONAL AND BEHAVIORAL
 
 Questions 24 to 30:
-
-Generate 7 realistic software-engineering situational and behavioral questions.
+Generate exactly 7 different software-engineering situational or behavioral questions.
 
 Cover different situations such as:
 
 - Disagreement with a teammate
 - Debugging a difficult problem
 - Working under time pressure
-- Meeting a difficult deadline
-- Handling a failed implementation
-- Learning an unfamiliar technology
+- Difficult deadline
+- Failed implementation
+- Learning unfamiliar technology
 - Receiving critical feedback
 - Prioritizing multiple tasks
-- Handling changing requirements
-- Working in a team
-- Taking ownership of a problem
+- Changing requirements
+- Team collaboration
+- Taking ownership
 
 Do not repeat the same situation.
 
-Questions should be relevant to a software engineering role.
+IMPORTANT OUTPUT RULES:
 
-==================================================
-IMPORTANT OUTPUT RULES
-==================================================
+1. Return EXACTLY 30 questions.
+2. Return ONLY a JSON array.
+3. The JSON array must contain exactly 30 strings.
+4. Do not add markdown.
+5. Do not add code fences.
+6. Do not add explanations.
+7. Do not add section headings.
+8. Do not add numbering.
+9. Do not use bullet points.
+10. Do not provide answers.
+11. Do not invent resume information.
+12. Use clear professional English.
+13. Each array item must be a complete question.
+14. The first item MUST be:
+"Tell me about yourself and your journey in Computer Science."
 
-1. Generate EXACTLY 30 questions.
+The required distribution is:
 
-2. Question 1 MUST be the self-introduction question.
+Question 1 = Self introduction
 
-3. Questions 2-15 MUST be resume-based.
+Questions 2-15 = Resume deep-dive
 
-4. Questions 16-23 MUST be medium-level DSA/coding questions.
+Questions 16-23 = DSA/coding
 
-5. Questions 24-30 MUST be situational/behavioral questions.
+Questions 24-30 = Situational/behavioral
 
-6. Analyze the ENTIRE resume before creating resume questions.
-
-7. Cover the resume as comprehensively as possible.
-
-8. Do NOT invent information that is not in the resume.
-
-9. Do NOT repeat questions.
-
-10. Do NOT provide answers.
-
-11. Do NOT provide explanations.
-
-12. Do NOT add section headings.
-
-13. Do NOT add numbering.
-
-14. Do NOT use bullet points.
-
-15. Use clear professional English.
-
-16. Do NOT use Chinese, Korean, Japanese, Arabic, or other non-English characters.
-
-17. Return ONLY a valid JSON array.
-
-18. The JSON array MUST contain exactly 30 strings.
-
-EXPECTED FORMAT:
+Return exactly this structure:
 
 [
-  "Tell me about yourself and your journey in Computer Science.",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Resume-based question...",
-  "Medium-level DSA question...",
-  "Medium-level coding question...",
-  "Medium-level DSA question...",
-  "Medium-level coding question...",
-  "Medium-level DSA question...",
-  "Medium-level DSA question...",
-  "Medium-level coding question...",
-  "Medium-level problem-solving question...",
-  "Situational software engineering question...",
-  "Situational software engineering question...",
-  "Situational software engineering question...",
-  "Situational software engineering question...",
-  "Situational software engineering question...",
-  "Situational software engineering question...",
-  "Situational software engineering question..."
+"Tell me about yourself and your journey in Computer Science.",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"Resume question",
+"DSA question",
+"DSA question",
+"DSA question",
+"DSA question",
+"DSA question",
+"DSA question",
+"DSA question",
+"DSA question",
+"Situational question",
+"Situational question",
+"Situational question",
+"Situational question",
+"Situational question",
+"Situational question",
+"Situational question"
 ]
-
-Generate the questions now.
 `;
+
+    const callAI = async () => {
 
         console.log("\nSending resume to OpenRouter...");
 
         const response = await axios.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            OPENROUTER_URL,
             {
-                model: "google/gemma-3-27b-it",
+                model: MODEL,
 
                 messages: [
                     {
                         role: "system",
                         content:
-                            "You are a professional software engineering interviewer. Follow the requested output format exactly."
+                            "You are a professional software engineering interviewer. Return only valid JSON."
                     },
                     {
                         role: "user",
@@ -266,11 +220,10 @@ Generate the questions now.
                     }
                 ],
 
-                temperature: 0.2,
+                temperature: 0.1,
 
-                max_tokens: 4000
+                max_tokens: 5000
             },
-
             {
                 headers: {
                     Authorization:
@@ -282,194 +235,241 @@ Generate the questions now.
             }
         );
 
-        if (
-            !response.data ||
-            !response.data.choices ||
-            !response.data.choices[0] ||
-            !response.data.choices[0].message
-        ) {
+        const content =
+            response.data?.choices?.[0]?.message?.content;
 
-            console.log("Invalid AI response:");
-            console.log(response.data);
-
-            throw new Error("Invalid AI response");
+        if (!content) {
+            throw new Error(
+                "OpenRouter returned an empty response."
+            );
         }
 
-        let rawQuestions =
-            response.data.choices[0].message.content;
+        return content;
+    };
+
+
+    const parseQuestions = (rawResponse) => {
 
         console.log("\n======================================");
         console.log("RAW AI RESPONSE");
         console.log("======================================");
 
-        console.log(rawQuestions);
+        console.log(rawResponse);
 
-        // Remove markdown code fences if the model adds them
-        rawQuestions = rawQuestions
+        let cleaned = rawResponse
             .replace(/```json/gi, "")
             .replace(/```/g, "")
             .trim();
 
-        let questionArray;
+
+        const startIndex =
+            cleaned.indexOf("[");
+
+        const endIndex =
+            cleaned.lastIndexOf("]");
+
+
+        if (
+            startIndex === -1 ||
+            endIndex === -1
+        ) {
+
+            throw new Error(
+                "AI response does not contain a JSON array."
+            );
+        }
+
+
+        const jsonText =
+            cleaned.substring(
+                startIndex,
+                endIndex + 1
+            );
+
+
+        let questions;
 
         try {
 
-            /*
-             * Find the JSON array even if the AI
-             * adds a small amount of extra text.
-             */
-
-            const startIndex =
-                rawQuestions.indexOf("[");
-
-            const endIndex =
-                rawQuestions.lastIndexOf("]");
-
-            if (
-                startIndex === -1 ||
-                endIndex === -1
-            ) {
-
-                throw new Error(
-                    "JSON array not found"
-                );
-            }
-
-            const jsonText =
-                rawQuestions.substring(
-                    startIndex,
-                    endIndex + 1
-                );
-
-            questionArray =
+            questions =
                 JSON.parse(jsonText);
 
         }
 
-        catch (parseError) {
+        catch (error) {
 
             console.log(
-                "\nJSON parsing failed:"
-            );
-
-            console.log(
-                parseError.message
+                "JSON parsing failed:",
+                error.message
             );
 
             throw new Error(
-                "AI returned invalid question format"
+                "AI returned invalid JSON."
             );
         }
 
-        // Validate that the AI returned an array
-        if (!Array.isArray(questionArray)) {
+
+        if (!Array.isArray(questions)) {
 
             throw new Error(
-                "AI questions are not an array"
+                "AI response is not an array."
             );
         }
 
-        // Remove invalid / empty questions
-        questionArray =
-            questionArray
+
+        questions =
+            questions
                 .filter(
                     (question) =>
                         typeof question === "string" &&
                         question.trim().length > 0
                 )
-                .map((question) =>
-                    question
-                        .replace(/[\u0080-\uFFFF]/g, "")
-                        .replace(/\s+/g, " ")
-                        .trim()
+                .map(
+                    (question) =>
+                        question
+                            .replace(
+                                /[\u0080-\uFFFF]/g,
+                                ""
+                            )
+                            .replace(
+                                /\s+/g,
+                                " "
+                            )
+                            .trim()
                 );
 
-        console.log("\n======================================");
-        console.log("CLEAN QUESTIONS");
-        console.log("======================================");
 
-        questionArray.forEach(
-            (question, index) => {
+        return questions;
+    };
 
-                console.log(
-                    `Q${index + 1}: ${question}`
-                );
 
+    /*
+     * Try up to 3 times.
+     *
+     * Gemma can occasionally return 29 or 31
+     * items even when explicitly asked for 30.
+     */
+
+    const MAX_ATTEMPTS = 3;
+
+    let questionArray = null;
+
+
+    for (
+        let attempt = 1;
+        attempt <= MAX_ATTEMPTS;
+        attempt++
+    ) {
+
+        try {
+
+            console.log(
+                `\nAI generation attempt ${attempt}/${MAX_ATTEMPTS}`
+            );
+
+
+            const rawResponse =
+                await callAI();
+
+
+            const questions =
+                parseQuestions(rawResponse);
+
+
+            console.log(
+                `AI returned ${questions.length} questions.`
+            );
+
+
+            if (
+                questions.length === TOTAL_QUESTIONS
+            ) {
+
+                questionArray =
+                    questions;
+
+                break;
             }
-        );
 
-        /*
-         * We require exactly 30 questions.
-         */
-
-        if (questionArray.length !== 30) {
 
             console.log(
-                `AI returned ${questionArray.length} questions instead of 30.`
+                `Invalid question count. Expected ${TOTAL_QUESTIONS}, received ${questions.length}.`
             );
 
-            throw new Error(
-                "AI did not generate exactly 30 questions"
-            );
-        }
 
-        /*
-         * Convert the array into newline-separated
-         * questions because Interview.jsx currently
-         * uses split("\\n").
-         */
+            if (
+                attempt === MAX_ATTEMPTS
+            ) {
 
-        const finalQuestions =
-            questionArray.join("\n");
-
-        console.log("\n======================================");
-        console.log("FINAL QUESTIONS SENT TO INTERVIEW");
-        console.log("======================================");
-
-        console.log(finalQuestions);
-
-        return finalQuestions;
-
-    }
-
-    catch (error) {
-
-        console.log(
-            "\n======================================"
-        );
-
-        console.log(
-            "QUESTION GENERATION ERROR"
-        );
-
-        console.log(
-            "======================================"
-        );
-
-        if (error.response) {
-
-            console.log(
-                "OpenRouter Status:",
-                error.response.status
-            );
-
-            console.log(
-                "OpenRouter Error:",
-                error.response.data
-            );
+                throw new Error(
+                    `AI did not generate exactly ${TOTAL_QUESTIONS} questions after ${MAX_ATTEMPTS} attempts.`
+                );
+            }
 
         }
 
-        else {
+        catch (error) {
 
             console.log(
+                `Attempt ${attempt} failed:`,
                 error.message
             );
-        }
 
-        throw error;
+
+            if (
+                attempt === MAX_ATTEMPTS
+            ) {
+
+                throw error;
+            }
+        }
     }
+
+
+    if (
+        !questionArray ||
+        questionArray.length !== TOTAL_QUESTIONS
+    ) {
+
+        throw new Error(
+            "Unable to generate exactly 30 interview questions."
+        );
+    }
+
+
+    console.log("\n======================================");
+    console.log("FINAL QUESTIONS");
+    console.log("======================================");
+
+
+    questionArray.forEach(
+        (question, index) => {
+
+            console.log(
+                `Q${index + 1}: ${question}`
+            );
+
+        }
+    );
+
+
+    /*
+     * Interview.jsx currently expects newline-separated
+     * questions, so keep this format.
+     */
+
+    const finalQuestions =
+        questionArray.join("\n");
+
+
+    console.log("\n======================================");
+    console.log("30 QUESTIONS GENERATED SUCCESSFULLY");
+    console.log("======================================");
+
+
+    return finalQuestions;
 };
+
 
 module.exports = {
     generateInterviewQuestions
