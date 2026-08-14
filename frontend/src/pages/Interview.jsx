@@ -1,7 +1,8 @@
 import {
     useEffect,
-    useState,
+    useMemo,
     useRef,
+    useState,
     useCallback
 } from "react";
 
@@ -15,9 +16,7 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 
 import hr from "../assets/hr.svg";
-
-import CameraMonitor
-    from "../components/CameraMonitor";
+import CameraMonitor from "../components/CameraMonitor";
 
 import "../index.css";
 
@@ -36,16 +35,22 @@ function Interview() {
         location.state?.questions || "";
 
 
-    const questionList =
-        questionData
+    const questionList = useMemo(() => {
+
+        return questionData
             .split("\n")
-            .map((q) =>
-                q
+            .map((question) =>
+                question
                     .replace(/^\s*[-*•]\s*/, "")
                     .replace(/^\s*\d+[\.\)]\s*/, "")
                     .trim()
             )
-            .filter((q) => q.length > 0);
+            .filter(
+                (question) =>
+                    question.length > 0
+            );
+
+    }, [questionData]);
 
 
     // =========================================================
@@ -77,25 +82,13 @@ function Interview() {
 
 
     const [
-        isRecording,
-        setIsRecording
-    ] = useState(false);
-
-
-    const [
-        seconds,
-        setSeconds
-    ] = useState(0);
-
-
-    const [
         interviewStarted,
         setInterviewStarted
     ] = useState(false);
 
 
     // =========================================================
-    // CAMERA STATE
+    // CAMERA
     // =========================================================
 
     const [
@@ -105,7 +98,7 @@ function Interview() {
 
 
     // =========================================================
-    // SPEECH STATE
+    // SPEECH
     // =========================================================
 
     const [
@@ -121,7 +114,27 @@ function Interview() {
 
 
     // =========================================================
-    // VIOLATIONS
+    // RECORDING
+    // =========================================================
+
+    const [
+        isRecording,
+        setIsRecording
+    ] = useState(false);
+
+
+    // =========================================================
+    // TIMER
+    // =========================================================
+
+    const [
+        seconds,
+        setSeconds
+    ] = useState(0);
+
+
+    // =========================================================
+    // TAB VIOLATIONS
     // =========================================================
 
     const [
@@ -134,24 +147,20 @@ function Interview() {
     // REFS
     // =========================================================
 
-    const cameraWasDisabled =
-        useRef(false);
-
-
-    const interviewInitialized =
-        useRef(false);
-
-
-    const previousCameraStatus =
-        useRef("checking");
+    const mountedRef =
+        useRef(true);
 
 
     const speechQuestionRef =
         useRef(null);
 
 
-    const mountedRef =
-        useRef(true);
+    const previousCameraStatus =
+        useRef("checking");
+
+
+    const cameraWasDisabled =
+        useRef(false);
 
 
     // =========================================================
@@ -167,7 +176,7 @@ function Interview() {
 
 
     // =========================================================
-    // CLEANUP MOUNT
+    // COMPONENT CLEANUP
     // =========================================================
 
     useEffect(() => {
@@ -188,7 +197,29 @@ function Interview() {
 
 
     // =========================================================
-    // CAMERA CALLBACK
+    // CHECK QUESTIONS
+    // =========================================================
+
+    useEffect(() => {
+
+        if (
+            !location.state ||
+            questionList.length === 0
+        ) {
+
+            navigate("/dashboard");
+
+        }
+
+    }, [
+        location.state,
+        questionList.length,
+        navigate
+    ]);
+
+
+    // =========================================================
+    // CAMERA STATUS
     // =========================================================
 
     const handleCameraStatusChange =
@@ -205,29 +236,7 @@ function Interview() {
 
 
     // =========================================================
-    // REDIRECT IF NO QUESTIONS
-    // =========================================================
-
-    useEffect(() => {
-
-        if (
-            !location.state ||
-            questionList.length === 0
-        ) {
-
-            navigate("/dashboard");
-
-        }
-
-    }, [
-        location.state,
-        navigate,
-        questionList.length
-    ]);
-
-
-    // =========================================================
-    // RECORDING STATE
+    // RECORDING STATUS
     // =========================================================
 
     useEffect(() => {
@@ -238,12 +247,15 @@ function Interview() {
 
 
     // =========================================================
-    // SPEECH → ANSWER
+    // TRANSCRIPT → ANSWER
     // =========================================================
 
     useEffect(() => {
 
-        if (listening || transcript) {
+        if (
+            transcript ||
+            listening
+        ) {
 
             setAnswer(transcript);
 
@@ -256,7 +268,7 @@ function Interview() {
 
 
     // =========================================================
-    // INTERVIEW TIMER
+    // TIMER
     // =========================================================
 
     useEffect(() => {
@@ -264,6 +276,7 @@ function Interview() {
         if (!interviewStarted) {
             return;
         }
+
 
         const timer =
             setInterval(() => {
@@ -276,10 +289,15 @@ function Interview() {
             }, 1000);
 
 
-        return () =>
+        return () => {
+
             clearInterval(timer);
 
-    }, [interviewStarted]);
+        };
+
+    }, [
+        interviewStarted
+    ]);
 
 
     // =========================================================
@@ -288,15 +306,16 @@ function Interview() {
 
     const speakQuestion =
         useCallback(
-            (questionText = null) => {
+            (questionText) => {
 
-                const text =
-                    questionText ||
-                    questionList[currentQuestion];
+                if (!questionText) {
 
+                    console.log(
+                        "No question to speak."
+                    );
 
-                if (!text) {
                     return;
+
                 }
 
 
@@ -305,171 +324,60 @@ function Interview() {
                     "enabled"
                 ) {
 
-                    return;
-
-                }
-
-
-                if (!mountedRef.current) {
-                    return;
-                }
-
-
-                // Prevent speaking same question repeatedly
-                if (
-                    speechQuestionRef.current ===
-                    `${currentQuestion}-${text}`
-                ) {
+                    console.log(
+                        "Camera is not enabled. Speech cancelled."
+                    );
 
                     return;
 
                 }
+
+
+                console.log(
+                    "Attempting to speak:",
+                    questionText
+                );
+
+
+                // Stop anything already speaking
+                window
+                    .speechSynthesis
+                    .cancel();
+
+
+                setIsSpeaking(true);
+
+                setSpeechError(false);
 
 
                 speechQuestionRef.current =
-                    `${currentQuestion}-${text}`;
+                    questionText;
 
 
-                // Stop previous speech
-                window.speechSynthesis.cancel();
-
-
-                setSpeechError(false);
-                setIsSpeaking(true);
-
-
-                const speech =
+                const utterance =
                     new SpeechSynthesisUtterance(
-                        text
+                        questionText
                     );
 
 
-                speech.lang = "en-US";
-
-                speech.rate = 0.9;
-
-                speech.pitch = 1;
-
-                speech.volume = 1;
+                utterance.lang =
+                    "en-US";
 
 
-                // -------------------------------------------------
-                // Find best available English voice
-                // -------------------------------------------------
-
-                const selectVoice = () => {
-
-                    const voices =
-                        window
-                            .speechSynthesis
-                            .getVoices();
+                utterance.rate =
+                    0.9;
 
 
-                    if (!voices.length) {
-                        return null;
-                    }
+                utterance.pitch =
+                    1;
 
 
-                    return (
-                        voices.find(
-                            (voice) =>
-                                voice.lang
-                                    .toLowerCase() ===
-                                    "en-us" &&
-                                /Google|Microsoft|Samantha|Natural/i
-                                    .test(
-                                        voice.name
-                                    )
-                        ) ||
-
-                        voices.find(
-                            (voice) =>
-                                voice.lang
-                                    .toLowerCase()
-                                    .startsWith("en")
-                        ) ||
-
-                        voices[0]
-                    );
-
-                };
-
-
-                const voice =
-                    selectVoice();
-
-
-                if (voice) {
-
-                    speech.voice = voice;
-
-                }
+                utterance.volume =
+                    1;
 
 
                 // -------------------------------------------------
-                // Speech starts
-                // -------------------------------------------------
-
-                speech.onstart = () => {
-
-                    if (!mountedRef.current) {
-                        return;
-                    }
-
-                    console.log(
-                        "🔊 Sophia started speaking:"
-                    );
-
-                    console.log(text);
-
-                    setIsSpeaking(true);
-
-                };
-
-
-                // -------------------------------------------------
-                // Speech finished
-                // -------------------------------------------------
-
-                speech.onend = () => {
-
-                    if (!mountedRef.current) {
-                        return;
-                    }
-
-                    console.log(
-                        "🔊 Sophia finished speaking"
-                    );
-
-                    setIsSpeaking(false);
-
-                };
-
-
-                // -------------------------------------------------
-                // Speech error
-                // -------------------------------------------------
-
-                speech.onerror = (event) => {
-
-                    console.error(
-                        "Speech synthesis error:",
-                        event
-                    );
-
-                    if (!mountedRef.current) {
-                        return;
-                    }
-
-                    setIsSpeaking(false);
-
-                    setSpeechError(true);
-
-                };
-
-
-                // -------------------------------------------------
-                // Speak when browser voices are available
+                // Get browser voices
                 // -------------------------------------------------
 
                 const voices =
@@ -478,342 +386,187 @@ function Interview() {
                         .getVoices();
 
 
-                if (voices.length > 0) {
+                console.log(
+                    "Available voices:",
+                    voices
+                );
 
-                    // Voice already available
-                    window.speechSynthesis.speak(
-                        speech
+
+                const englishVoice =
+                    voices.find(
+                        (voice) =>
+                            voice.lang
+                                .toLowerCase() ===
+                            "en-us"
+                    ) ||
+
+                    voices.find(
+                        (voice) =>
+                            voice.lang
+                                .toLowerCase()
+                                .startsWith("en")
                     );
 
-                } else {
 
-                    // Browser hasn't loaded voices yet
-                    const handleVoicesChanged =
-                        () => {
+                if (englishVoice) {
 
-                            window
-                                .speechSynthesis
-                                .removeEventListener(
-                                    "voiceschanged",
-                                    handleVoicesChanged
-                                );
-
-
-                            const availableVoices =
-                                window
-                                    .speechSynthesis
-                                    .getVoices();
-
-
-                            const selectedVoice =
-                                availableVoices.find(
-                                    (voice) =>
-                                        voice.lang
-                                            .toLowerCase()
-                                            .startsWith(
-                                                "en"
-                                            )
-                                );
-
-
-                            if (
-                                selectedVoice
-                            ) {
-
-                                speech.voice =
-                                    selectedVoice;
-
-                            }
-
-
-                            window
-                                .speechSynthesis
-                                .speak(
-                                    speech
-                                );
-
-                        };
-
-
-                    window
-                        .speechSynthesis
-                        .addEventListener(
-                            "voiceschanged",
-                            handleVoicesChanged
-                        );
-
-
-                    // Fallback in case voiceschanged
-                    // does not fire
-                    setTimeout(() => {
-
-                        window
-                            .speechSynthesis
-                            .removeEventListener(
-                                "voiceschanged",
-                                handleVoicesChanged
-                            );
-
-
-                        if (
-                            !window
-                                .speechSynthesis
-                                .speaking
-                        ) {
-
-                            window
-                                .speechSynthesis
-                                .speak(
-                                    speech
-                                );
-
-                        }
-
-                    }, 1000);
+                    utterance.voice =
+                        englishVoice;
 
                 }
 
+
+                // -------------------------------------------------
+                // Speech events
+                // -------------------------------------------------
+
+                utterance.onstart = () => {
+
+                    console.log(
+                        "🔊 Sophia started speaking"
+                    );
+
+                    if (
+                        mountedRef.current
+                    ) {
+
+                        setIsSpeaking(
+                            true
+                        );
+
+                    }
+
+                };
+
+
+                utterance.onend = () => {
+
+                    console.log(
+                        "🔊 Sophia finished speaking"
+                    );
+
+                    if (
+                        mountedRef.current
+                    ) {
+
+                        setIsSpeaking(
+                            false
+                        );
+
+                    }
+
+                };
+
+
+                utterance.onerror = (
+                    event
+                ) => {
+
+                    console.error(
+                        "❌ Speech synthesis error:",
+                        event
+                    );
+
+                    if (
+                        mountedRef.current
+                    ) {
+
+                        setIsSpeaking(
+                            false
+                        );
+
+                        setSpeechError(
+                            true
+                        );
+
+                    }
+
+                };
+
+
+                // -------------------------------------------------
+                // Speak
+                // -------------------------------------------------
+
+                window
+                    .speechSynthesis
+                    .speak(
+                        utterance
+                    );
+
             },
             [
-                currentQuestion,
-                cameraStatus,
-                questionList
+                cameraStatus
             ]
         );
 
 
     // =========================================================
-    // CAMERA STATE HANDLING
+    // START INTERVIEW
+    // IMPORTANT:
+    // This is called DIRECTLY from button click.
+    // This allows browser speech synthesis to work.
     // =========================================================
 
-    useEffect(() => {
-
-        const previousStatus =
-            previousCameraStatus.current;
-
-
-        // -------------------------------------------------
-        // Camera checking
-        // -------------------------------------------------
-
-        if (
-            cameraStatus ===
-            "checking"
-        ) {
-
-            previousCameraStatus.current =
-                cameraStatus;
-
-            return;
-
-        }
-
-
-        // -------------------------------------------------
-        // Camera disabled
-        // -------------------------------------------------
-
-        if (
-            cameraStatus ===
-            "disabled"
-        ) {
-
-            // Stop Sophia
-            window
-                .speechSynthesis
-                .cancel();
-
-
-            setIsSpeaking(false);
-
-
-            // Stop candidate recording
-            SpeechRecognition
-                .stopListening();
-
-
-            setIsRecording(false);
-
-
-            if (interviewStarted) {
-
-                cameraWasDisabled.current =
-                    true;
-
-            }
-
-
-            previousCameraStatus.current =
-                cameraStatus;
-
-            return;
-
-        }
-
-
-        // -------------------------------------------------
-        // Camera enabled
-        // -------------------------------------------------
-
-        if (
-            cameraStatus ===
-            "enabled"
-        ) {
-
-            // First time camera is enabled
-            if (
-                !interviewInitialized.current
-            ) {
-
-                interviewInitialized.current =
-                    true;
-
-
-                setInterviewStarted(true);
-
-
-                const timer =
-                    setTimeout(() => {
-
-                        speechQuestionRef.current =
-                            null;
-
-                        speakQuestion();
-
-                    }, 1000);
-
-
-                previousCameraStatus.current =
-                    cameraStatus;
-
-
-                return () =>
-                    clearTimeout(timer);
-
-            }
-
-
-            // Camera was disabled during interview
-            if (
-                previousStatus ===
-                    "disabled" &&
-                cameraWasDisabled.current
-            ) {
-
-                cameraWasDisabled.current =
-                    false;
-
-
-                const timer =
-                    setTimeout(() => {
-
-                        speechQuestionRef.current =
-                            null;
-
-                        speakQuestion();
-
-                    }, 800);
-
-
-                previousCameraStatus.current =
-                    cameraStatus;
-
-
-                return () =>
-                    clearTimeout(timer);
-
-            }
-
-        }
-
-
-        previousCameraStatus.current =
-            cameraStatus;
-
-    }, [
-        cameraStatus,
-        interviewStarted,
-        speakQuestion
-    ]);
-
-
-    // =========================================================
-    // QUESTION CHANGE
-    // =========================================================
-
-    useEffect(() => {
-
-        // First question is handled
-        // when camera becomes enabled
-        if (
-            currentQuestion === 0
-        ) {
-
-            return;
-
-        }
-
+    const startInterview = () => {
 
         if (
             cameraStatus !==
             "enabled"
         ) {
 
+            alert(
+                "⚠️ Please enable your camera before starting the interview."
+            );
+
             return;
 
         }
 
 
         if (
-            !interviewStarted
+            questionList.length === 0
         ) {
+
+            alert(
+                "No interview questions found."
+            );
 
             return;
 
         }
 
 
-        setAnswer("");
+        console.log(
+            "Starting interview..."
+        );
+
+
+        setInterviewStarted(
+            true
+        );
+
 
         setSubmitted(false);
+
+        setAnswer("");
 
         resetTranscript();
 
 
-        window
-            .speechSynthesis
-            .cancel();
-
-
-        setIsSpeaking(false);
-
-
-        // Allow the new question to speak
         speechQuestionRef.current =
             null;
 
 
-        const timer =
-            setTimeout(() => {
+        // IMPORTANT:
+        // Speak directly after the button click.
+        // No useEffect here.
 
-                speakQuestion();
+        speakQuestion(
+            questionList[0]
+        );
 
-            }, 700);
-
-
-        return () => {
-
-            clearTimeout(timer);
-
-            window
-                .speechSynthesis
-                .cancel();
-
-        };
-
-    }, [
-        currentQuestion
-    ]);
+    };
 
 
     // =========================================================
@@ -828,7 +581,7 @@ function Interview() {
         ) {
 
             alert(
-                "⚠️ Camera access is required to continue the interview."
+                "⚠️ Camera access is required."
             );
 
             return;
@@ -836,12 +589,29 @@ function Interview() {
         }
 
 
-        if (submitted) {
+        if (
+            !interviewStarted
+        ) {
+
+            alert(
+                "Please start the interview first."
+            );
+
             return;
+
         }
 
 
-        // Stop Sophia if she is still speaking
+        if (
+            submitted
+        ) {
+
+            return;
+
+        }
+
+
+        // Stop Sophia
         window
             .speechSynthesis
             .cancel();
@@ -857,14 +627,18 @@ function Interview() {
 
         SpeechRecognition.startListening({
 
-            continuous: true,
+            continuous:
+                true,
 
-            language: "en-IN"
+            language:
+                "en-IN"
 
         });
 
 
-        setIsRecording(true);
+        setIsRecording(
+            true
+        );
 
     };
 
@@ -875,9 +649,94 @@ function Interview() {
 
     const stopListening = () => {
 
-        SpeechRecognition.stopListening();
+        SpeechRecognition
+            .stopListening();
 
-        setIsRecording(false);
+
+        setIsRecording(
+            false
+        );
+
+    };
+
+
+    // =========================================================
+    // SUBMIT ANSWER
+    // =========================================================
+
+    const handleSubmit = () => {
+
+        if (
+            cameraStatus !==
+            "enabled"
+        ) {
+
+            alert(
+                "⚠️ Please enable your camera."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !interviewStarted
+        ) {
+
+            alert(
+                "Please start the interview first."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            submitted
+        ) {
+
+            return;
+
+        }
+
+
+        const finalAnswer =
+            answer.trim();
+
+
+        if (
+            !finalAnswer
+        ) {
+
+            alert(
+                "No answer detected. Please record your answer first."
+            );
+
+            return;
+
+        }
+
+
+        SpeechRecognition
+            .stopListening();
+
+
+        setIsRecording(
+            false
+        );
+
+
+        setSubmitted(
+            true
+        );
+
+
+        console.log(
+            "Answer submitted:",
+            finalAnswer
+        );
 
     };
 
@@ -894,7 +753,7 @@ function Interview() {
         ) {
 
             alert(
-                "Please enable your camera first."
+                "⚠️ Please enable your camera first."
             );
 
             return;
@@ -902,19 +761,264 @@ function Interview() {
         }
 
 
-        // Stop candidate recording
-        SpeechRecognition.stopListening();
+        if (
+            !interviewStarted
+        ) {
 
-        setIsRecording(false);
+            return;
+
+        }
+
+
+        if (
+            isRecording
+        ) {
+
+            SpeechRecognition
+                .stopListening();
+
+            setIsRecording(
+                false
+            );
+
+        }
+
+
+        const question =
+            questionList[
+                currentQuestion
+            ];
 
 
         speechQuestionRef.current =
             null;
 
 
-        speakQuestion();
+        speakQuestion(
+            question
+        );
 
     };
+
+
+    // =========================================================
+    // NEXT QUESTION
+    // =========================================================
+
+    const handleNext = () => {
+
+        if (
+            cameraStatus !==
+            "enabled"
+        ) {
+
+            alert(
+                "⚠️ Camera is required to continue."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !submitted
+        ) {
+
+            alert(
+                "Please submit your answer first."
+            );
+
+            return;
+
+        }
+
+
+        const finalAnswer =
+            answer.trim();
+
+
+        const updatedAnswers =
+            [
+                ...answers,
+                finalAnswer
+            ];
+
+
+        setAnswers(
+            updatedAnswers
+        );
+
+
+        SpeechRecognition
+            .stopListening();
+
+
+        setIsRecording(
+            false
+        );
+
+
+        window
+            .speechSynthesis
+            .cancel();
+
+
+        setIsSpeaking(
+            false
+        );
+
+
+        resetTranscript();
+
+
+        // -------------------------------------------------
+        // More questions
+        // -------------------------------------------------
+
+        if (
+            currentQuestion <
+            questionList.length - 1
+        ) {
+
+            const nextQuestionIndex =
+                currentQuestion + 1;
+
+
+            const nextQuestion =
+                questionList[
+                    nextQuestionIndex
+                ];
+
+
+            setCurrentQuestion(
+                nextQuestionIndex
+            );
+
+
+            setAnswer("");
+
+            setSubmitted(false);
+
+
+            // Give React a tiny amount of time
+            // to update the UI, then speak.
+            setTimeout(() => {
+
+                speechQuestionRef.current =
+                    null;
+
+                speakQuestion(
+                    nextQuestion
+                );
+
+            }, 200);
+
+
+            return;
+
+        }
+
+
+        // -------------------------------------------------
+        // Interview finished
+        // -------------------------------------------------
+
+        navigate(
+            "/results",
+            {
+                state: {
+
+                    questions:
+                        questionList,
+
+                    answers:
+                        updatedAnswers,
+
+                    terminated:
+                        false
+
+                }
+            }
+        );
+
+    };
+
+
+    // =========================================================
+    // CAMERA DISABLE HANDLING
+    // =========================================================
+
+    useEffect(() => {
+
+        const previousStatus =
+            previousCameraStatus.current;
+
+
+        // Camera disabled during interview
+        if (
+            cameraStatus ===
+                "disabled" &&
+            interviewStarted
+        ) {
+
+            console.log(
+                "Camera disabled during interview."
+            );
+
+
+            cameraWasDisabled.current =
+                true;
+
+
+            window
+                .speechSynthesis
+                .cancel();
+
+
+            setIsSpeaking(
+                false
+            );
+
+
+            SpeechRecognition
+                .stopListening();
+
+
+            setIsRecording(
+                false
+            );
+
+        }
+
+
+        // Camera enabled again
+        if (
+            cameraStatus ===
+                "enabled" &&
+            previousStatus ===
+                "disabled" &&
+            cameraWasDisabled.current
+        ) {
+
+            cameraWasDisabled.current =
+                false;
+
+
+            alert(
+                "✅ Camera enabled again. You can continue the interview."
+            );
+
+        }
+
+
+        previousCameraStatus.current =
+            cameraStatus;
+
+    }, [
+        cameraStatus,
+        interviewStarted
+    ]);
 
 
     // =========================================================
@@ -975,7 +1079,9 @@ function Interview() {
                                 .stopListening();
 
 
-                            setIsRecording(false);
+                            setIsRecording(
+                                false
+                            );
 
 
                             alert(
@@ -1030,175 +1136,9 @@ function Interview() {
     }, [
         interviewStarted,
         answers,
-        navigate,
-        questionList
+        questionList,
+        navigate
     ]);
-
-
-    // =========================================================
-    // SUBMIT ANSWER
-    // =========================================================
-
-    const handleSubmit = () => {
-
-        if (
-            cameraStatus !==
-            "enabled"
-        ) {
-
-            alert(
-                "⚠️ Please enable your camera before continuing."
-            );
-
-            return;
-
-        }
-
-
-        if (submitted) {
-            return;
-        }
-
-
-        const finalAnswer =
-            answer.trim();
-
-
-        if (!finalAnswer) {
-
-            alert(
-                "No answer was detected. Please click Start Recording and speak your answer."
-            );
-
-            return;
-
-        }
-
-
-        SpeechRecognition
-            .stopListening();
-
-
-        setIsRecording(false);
-
-
-        setSubmitted(true);
-
-    };
-
-
-    // =========================================================
-    // NEXT QUESTION
-    // =========================================================
-
-    const handleNext = () => {
-
-        if (
-            cameraStatus !==
-            "enabled"
-        ) {
-
-            alert(
-                "⚠️ Camera is required to continue the interview."
-            );
-
-            return;
-
-        }
-
-
-        if (!submitted) {
-
-            alert(
-                "Please submit your recorded answer first."
-            );
-
-            return;
-
-        }
-
-
-        const finalAnswer =
-            answer.trim();
-
-
-        const updatedAnswers =
-            [
-                ...answers,
-                finalAnswer
-            ];
-
-
-        setAnswers(
-            updatedAnswers
-        );
-
-
-        SpeechRecognition
-            .stopListening();
-
-
-        setIsRecording(false);
-
-
-        resetTranscript();
-
-
-        window
-            .speechSynthesis
-            .cancel();
-
-
-        setIsSpeaking(false);
-
-
-        // -------------------------------------------------
-        // More questions
-        // -------------------------------------------------
-
-        if (
-            currentQuestion <
-            questionList.length - 1
-        ) {
-
-            setCurrentQuestion(
-                (previous) =>
-                    previous + 1
-            );
-
-
-            setAnswer("");
-
-            setSubmitted(false);
-
-            return;
-
-        }
-
-
-        // -------------------------------------------------
-        // Interview finished
-        // -------------------------------------------------
-
-        navigate(
-            "/results",
-            {
-                state: {
-
-                    questions:
-                        questionList,
-
-                    answers:
-                        updatedAnswers,
-
-                    terminated:
-                        false
-
-                }
-            }
-        );
-
-    };
 
 
     // =========================================================
@@ -1211,12 +1151,12 @@ function Interview() {
         );
 
 
-    const sec =
+    const remainingSeconds =
         seconds % 60;
 
 
     // =========================================================
-    // SPEECH SUPPORT CHECK
+    // SPEECH SUPPORT
     // =========================================================
 
     if (
@@ -1235,8 +1175,7 @@ function Interview() {
 
 
                     <p>
-                        Please open this interview
-                        in Chrome or another
+                        Please use Chrome or another
                         supported browser.
                     </p>
 
@@ -1382,7 +1321,7 @@ function Interview() {
                         {" : "}
 
                         {String(
-                            sec
+                            remainingSeconds
                         ).padStart(
                             2,
                             "0"
@@ -1581,7 +1520,7 @@ function Interview() {
                             {cameraStatus ===
                             "checking"
 
-                                ? "Please allow camera access to start your interview."
+                                ? "Please allow camera access to start the interview."
 
                                 : "Your camera must be enabled to continue the interview."}
 
@@ -1592,269 +1531,303 @@ function Interview() {
                 )}
 
 
-                {/* QUESTION */}
+                {/* =================================================
+                    START INTERVIEW
+                ================================================= */}
 
-                <div className="panel fade-up">
+                {!interviewStarted ? (
 
-                    <h2>
-                        AI Mock Interview
-                    </h2>
-
-
-                    <br />
-
-
-                    <div className="question-box">
-
-                        {cameraStatus ===
-                        "enabled"
-
-                            ? questionList[
-                                currentQuestion
-                            ]
-
-                            : "Enable your camera to begin the interview."}
-
-                    </div>
-
-
-                    {/* SPEECH STATUS */}
-
-                    <p
+                    <div
+                        className="panel fade-up"
                         style={{
-                            marginTop:
-                                "15px",
+                            textAlign:
+                                "center",
 
-                            color:
-                                "#94a3b8"
+                            padding:
+                                "45px 30px"
                         }}
                     >
 
-                        {cameraStatus ===
-                        "enabled" &&
+                        <h2>
+                            Ready to Start?
+                        </h2>
 
-                        interviewStarted &&
 
-                        !submitted
+                        <p
+                            style={{
+                                color:
+                                    "#94a3b8",
 
-                            ? isSpeaking
+                                marginTop:
+                                    "15px",
 
-                                ? "🔊 Sophia is speaking..."
+                                marginBottom:
+                                    "25px"
+                            }}
+                        >
+                            Make sure your camera is enabled.
+                            Once you start, Sophia will ask
+                            the first interview question aloud.
+                        </p>
 
-                                : isRecording
 
-                                    ? "🎙️ Listening to your answer..."
+                        <button
+                            className="next-btn"
+                            onClick={
+                                startInterview
+                            }
+
+                            disabled={
+                                cameraStatus !==
+                                "enabled"
+                            }
+
+                            style={{
+                                opacity:
+                                    cameraStatus ===
+                                    "enabled"
+                                        ? 1
+                                        : 0.5,
+
+                                cursor:
+                                    cameraStatus ===
+                                    "enabled"
+                                        ? "pointer"
+                                        : "not-allowed"
+                            }}
+                        >
+                            🎤 Start Interview
+                        </button>
+
+                    </div>
+
+                ) : (
+
+                    <>
+
+                        {/* =================================================
+                            QUESTION
+                        ================================================= */}
+
+                        <div className="panel fade-up">
+
+                            <h2>
+                                AI Mock Interview
+                            </h2>
+
+
+                            <br />
+
+
+                            <div className="question-box">
+
+                                {questionList[
+                                    currentQuestion
+                                ]}
+
+                            </div>
+
+
+                            {/* SPEECH STATUS */}
+
+                            <p
+                                style={{
+                                    marginTop:
+                                        "15px",
+
+                                    color:
+                                        "#94a3b8"
+                                }}
+                            >
+
+                                {isSpeaking
+
+                                    ? "🔊 Sophia is asking the question..."
 
                                     : speechError
 
-                                        ? "⚠️ Unable to play the question. Click Replay Question."
+                                        ? "⚠️ Sophia could not speak the question. Click Replay Question."
 
-                                        : "🔊 Sophia is ready."
+                                        : isRecording
 
-                            : cameraStatus ===
-                                "disabled"
+                                            ? "🎙️ Listening to your answer..."
 
-                                ? "⚠️ Interview paused because the camera is disabled."
+                                            : submitted
 
-                                : cameraStatus ===
-                                    "checking"
+                                                ? "✅ Answer submitted"
 
-                                    ? "🔍 Waiting for camera permission..."
+                                                : "🔊 Sophia has finished asking the question."}
 
-                                    : submitted
-
-                                        ? "✅ Answer submitted"
-
-                                        : ""}
-
-                    </p>
+                            </p>
 
 
-                    {/* REPLAY */}
+                            {/* REPLAY */}
 
-                    {cameraStatus ===
-                        "enabled" &&
+                            {!isRecording &&
+                                !submitted && (
 
-                        !isRecording &&
+                                <button
+                                    type="button"
+                                    onClick={
+                                        replayQuestion
+                                    }
 
-                        !submitted && (
+                                    style={{
+                                        marginTop:
+                                            "10px",
+
+                                        padding:
+                                            "8px 14px",
+
+                                        borderRadius:
+                                            "8px",
+
+                                        border:
+                                            "none",
+
+                                        cursor:
+                                            "pointer"
+                                    }}
+                                >
+                                    🔊 Replay Question
+                                </button>
+
+                            )}
+
+                        </div>
+
+
+                        {/* =================================================
+                            ANSWER
+                        ================================================= */}
+
+                        <div className="panel answer-box fade-up">
+
+                            <h3>
+                                Your Recorded Answer
+                            </h3>
+
+
+                            <br />
+
+
+                            <textarea
+                                value={
+                                    answer
+                                }
+                                readOnly
+                                placeholder="Your spoken answer will appear here..."
+                            />
+
+
+                            <div
+                                className="speech-buttons"
+                                style={{
+                                    display:
+                                        "flex",
+
+                                    gap:
+                                        "12px",
+
+                                    flexWrap:
+                                        "wrap",
+
+                                    marginTop:
+                                        "15px"
+                                }}
+                            >
+
+                                <button
+                                    onClick={
+                                        startListening
+                                    }
+
+                                    disabled={
+                                        isRecording ||
+                                        submitted ||
+                                        isSpeaking
+                                    }
+                                >
+                                    🎤 Start Recording
+                                </button>
+
+
+                                <button
+                                    onClick={
+                                        stopListening
+                                    }
+
+                                    disabled={
+                                        !isRecording
+                                    }
+                                >
+                                    ⏹ Stop Recording
+                                </button>
+
+
+                                <button
+                                    onClick={
+                                        handleSubmit
+                                    }
+
+                                    disabled={
+                                        submitted ||
+                                        !answer.trim()
+                                    }
+                                >
+
+                                    {submitted
+
+                                        ? "✅ Answer Submitted"
+
+                                        : "✅ Submit Answer"}
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        {/* =================================================
+                            NEXT
+                        ================================================= */}
 
                         <button
-                            type="button"
+                            className="next-btn"
                             onClick={
-                                replayQuestion
+                                handleNext
                             }
+
+                            disabled={
+                                !submitted
+                            }
+
                             style={{
-                                marginTop:
-                                    "10px",
-
-                                padding:
-                                    "8px 14px",
-
-                                borderRadius:
-                                    "8px",
-
-                                border:
-                                    "none",
+                                opacity:
+                                    submitted
+                                        ? 1
+                                        : 0.5,
 
                                 cursor:
-                                    "pointer"
+                                    submitted
+                                        ? "pointer"
+                                        : "not-allowed"
                             }}
                         >
-                            🔊 Replay Question
-                        </button>
 
-                    )}
+                            {currentQuestion ===
+                            questionList.length - 1
 
-                </div>
+                                ? "Finish Interview"
 
-
-                {/* ANSWER */}
-
-                <div className="panel answer-box fade-up">
-
-                    <h3>
-                        Your Recorded Answer
-                    </h3>
-
-
-                    <br />
-
-
-                    <textarea
-                        value={
-                            answer
-                        }
-                        readOnly
-                        placeholder={
-                            cameraStatus ===
-                            "enabled"
-
-                                ? "Your spoken answer will appear here..."
-
-                                : "Enable your camera before answering."
-                        }
-                    />
-
-
-                    <div
-                        className="speech-buttons"
-                        style={{
-                            display:
-                                "flex",
-
-                            gap:
-                                "12px",
-
-                            flexWrap:
-                                "wrap",
-
-                            marginTop:
-                                "15px"
-                        }}
-                    >
-
-                        <button
-                            onClick={
-                                startListening
-                            }
-
-                            disabled={
-                                cameraStatus !==
-                                    "enabled" ||
-
-                                isRecording ||
-
-                                submitted ||
-
-                                isSpeaking
-                            }
-                        >
-                            🎤 Start Recording
-                        </button>
-
-
-                        <button
-                            onClick={
-                                stopListening
-                            }
-
-                            disabled={
-                                !isRecording
-                            }
-                        >
-                            ⏹ Stop Recording
-                        </button>
-
-
-                        <button
-                            onClick={
-                                handleSubmit
-                            }
-
-                            disabled={
-                                cameraStatus !==
-                                    "enabled" ||
-
-                                submitted ||
-
-                                !answer.trim()
-                            }
-                        >
-
-                            {submitted
-
-                                ? "✅ Answer Submitted"
-
-                                : "✅ Submit Answer"}
+                                : "Next Question"}
 
                         </button>
 
-                    </div>
+                    </>
 
-                </div>
-
-
-                {/* NEXT */}
-
-                <button
-                    className="next-btn"
-                    onClick={
-                        handleNext
-                    }
-
-                    disabled={
-                        cameraStatus !==
-                            "enabled" ||
-
-                        !submitted
-                    }
-
-                    style={{
-                        opacity:
-                            cameraStatus ===
-                                "enabled" &&
-                            submitted
-                                ? 1
-                                : 0.5,
-
-                        cursor:
-                            cameraStatus ===
-                                "enabled" &&
-                            submitted
-                                ? "pointer"
-                                : "not-allowed"
-                    }}
-                >
-
-                    {currentQuestion ===
-                    questionList.length - 1
-
-                        ? "Finish Interview"
-
-                        : "Next Question"}
-
-                </button>
+                )}
 
             </div>
 
